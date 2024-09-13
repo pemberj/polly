@@ -54,6 +54,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from operator import attrgetter
 import weakref
+from multiprocessing import Pool
 from typing import Callable
 # tqdm progress bars
 from tqdm import tqdm
@@ -185,7 +186,7 @@ class Peak:
             the function in batch from some higher level.
     """
     
-    parent_ref: weakref.ReferenceType
+    # parent_ref: weakref.ReferenceType
     
     coarse_wavelength: float
     speclet: ArrayLike
@@ -214,17 +215,18 @@ class Peak:
     
     def __post_init__(self):
         # Set order_i and orderlet from parent Order
-        self.order_i = self.parent.i
-        self.orderlet = self.parent.orderlet
+        # self.order_i = self.parent.i
+        # self.orderlet = self.parent.orderlet
+        ...
     
     
-    @property
-    def parent(self) -> Order:
-        """
-        Return the Order to which this Peak belongs
-        """
+    # @property
+    # def parent(self) -> Order:
+    #     """
+    #     Return the Order to which this Peak belongs
+    #     """
         
-        return self.parent_ref()
+    #     return self.parent_ref()
     
     
     @property
@@ -726,9 +728,8 @@ class Order:
         
         self.peaks = [
                 Peak(
-                    parent_ref = weakref.ref(self),
+                    # parent_ref = weakref.ref(self),
                     coarse_wavelength = self.wave[_p],
-                    order_i = self.i,
                     speclet =\
                 self.spec[_p - window_to_save//2:_p + window_to_save//2 + 1],
                     wavelet =\
@@ -736,6 +737,8 @@ class Order:
                     starting_pixel = _p - window_to_save//2,
                     distance_from_order_center =\
                                         abs(self.wave[_p] - self.mean_wave),
+                    order_i = self.i,
+                    orderlet = self.orderlet,
                 )
             for _p in p
         # ignore peaks that are too close to the edge of the order
@@ -745,10 +748,17 @@ class Order:
         return self
     
     
-    def fit_peaks(self, type: str = "conv_gauss_tophat") -> Order:
+    def fit_peaks(
+        self,
+        type: str = "conv_gauss_tophat",
+        num_processes: int | None = 12,
+        ) -> Order:
         
-        for p in self.peaks:
-            p.fit(type=type)
+        with Pool(num_processes) as pool:
+            pool.map(_fit_peak, self.peaks)
+        
+        # for p in self.peaks:
+        #     p.fit(type=type)
             
         return self
     
@@ -1884,6 +1894,14 @@ class Spectrum:
         wls_file: {self.wls_file}
         orderlet: {self.orderlets}
         """
+
+
+def _fit_peak(p: Peak, type: str = "conv_gauss_tophat") -> None:
+    """
+    A standalone wrapper function to enable multiprocessing of individual peaks
+    """
+    
+    p.fit(type=type)
 
 
 def _fit_spline(
