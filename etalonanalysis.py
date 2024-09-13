@@ -739,14 +739,18 @@ class Order:
     def fit_peaks(
         self,
         type: str = "conv_gauss_tophat",
-        num_processes: int | None = 12,
+        batch_size: int = 10,
+        num_processes: int = 12,
         ) -> Order:
         
+        peak_batches =\
+            [
+            self.peaks[i:i+batch_size]\
+                for i in range(0, len(self.peaks) - batch_size + 1, batch_size)
+            ]
+        
         with Pool(num_processes) as pool:
-            r = pool.imap_unordered(_fit_peak, [(p, type) for p in self.peaks])
-            
-            for _ in r:
-                ...
+            pool.map(_fit_peak_batch, [(ps, type) for ps in peak_batches])
             
         return self
     
@@ -1884,19 +1888,20 @@ class Spectrum:
         """
 
 
-def _fit_peak(arg: tuple[Peak, str]) -> None:
+def _fit_peak_batch(arg: tuple[list[Peak], str]) -> None:
     """
     A standalone wrapper function to enable multiprocessing of individual peaks
     """
     
-    if isinstance(arg, Peak):
-        p = arg
+    if isinstance(arg, list):
+        ps = arg
         type = "conv_gauss_tophat"
     
     elif isinstance(arg, tuple) and len(arg) == 2:
-        p, type = arg
+        ps, type = arg
     
-    p.fit(type=type)
+    for p in ps:
+        p.fit(type=type)
 
 
 def _fit_spline(
