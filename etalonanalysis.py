@@ -68,12 +68,20 @@ from astropy import constants
 from scipy.signal import find_peaks
 from scipy.optimize import curve_fit
 from scipy.interpolate import splrep, BSpline
+# from scipy.special import erf
 # Matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.patheffects as pe
 
 # Number for just-in-time compiling and speedup
 from numba import njit
+
+import scipy.special as sc
+# Numba overloads for scipy.special functions
+# pip install numba-special???
+#doesn't work
+# maybe need to install numba and numba-special in a particular way...
+import numba_special
 
 
 try:
@@ -1910,6 +1918,7 @@ def _gaussian(
     return amplitude * np.exp(-((x - center) / (2 * sigma))**2) + offset
 
 
+@njit
 def _conv_gauss_tophat(
     x: ArrayLike,
     center: float = 0,
@@ -1934,11 +1943,10 @@ def _conv_gauss_tophat(
         with ~a delta function, producing a normal Gaussian as expected
       * Normalise the function so that `amp' corresponds to the highest value
     """
-    from scipy.special import erf
 
     arg1 = (x - center + (boxhalfwidth / 2 + 1e-6)) / (2 * sigma)
     arg2 = (x - center - (boxhalfwidth / 2 + 1e-6)) / (2 * sigma)
-    partial = 0.5 * (erf(arg1) - erf(arg2))
+    partial = 0.5 * (sc.erf(arg1) - sc.erf(arg2))
     
     if normalize:
         return amp * (partial / np.nanmax(partial)) + offset
