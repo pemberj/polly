@@ -54,7 +54,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from operator import attrgetter
 import weakref
-from multiprocessing import Pool
+from multiprocessing import Pool, Process
 from typing import Callable
 # tqdm progress bars
 from tqdm import tqdm
@@ -755,10 +755,10 @@ class Order:
         ) -> Order:
         
         with Pool(num_processes) as pool:
-            pool.map(_fit_peak, self.peaks)
-        
-        # for p in self.peaks:
-        #     p.fit(type=type)
+            r = pool.imap_unordered(_fit_peak, [(p, type) for p in self.peaks])
+            
+            for _ in r:
+                ...
             
         return self
     
@@ -1896,10 +1896,17 @@ class Spectrum:
         """
 
 
-def _fit_peak(p: Peak, type: str = "conv_gauss_tophat") -> None:
+def _fit_peak(arg: tuple[Peak, str]) -> None:
     """
     A standalone wrapper function to enable multiprocessing of individual peaks
     """
+    
+    if isinstance(arg, Peak):
+        p = arg
+        type = "conv_gauss_tophat"
+    
+    elif isinstance(arg, tuple) and len(arg) == 2:
+        p, type = arg
     
     p.fit(type=type)
 
