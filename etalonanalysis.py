@@ -72,6 +72,10 @@ from scipy.interpolate import splrep, BSpline
 from matplotlib import pyplot as plt
 import matplotlib.patheffects as pe
 
+# Number for just-in-time compiling and speedup
+from numba import njit
+
+
 try:
     from polly.plotStyle import plotStyle
 except ImportError:
