@@ -1946,7 +1946,11 @@ def _conv_gauss_tophat(
 
     arg1 = (x - center + (boxhalfwidth / 2 + 1e-6)) / (2 * sigma)
     arg2 = (x - center - (boxhalfwidth / 2 + 1e-6)) / (2 * sigma)
-    partial = 0.5 * (sc.erf(arg1) - sc.erf(arg2))
+    
+    # In order for the erf function to be numba-compatible, its argument must be
+    # a float, not an array of floats!
+    for a1, a2 in zip(arg1, arg2):
+        partial = 0.5 * (sc.erf(a1) - sc.erf(a2))
     
     if normalize:
         return amp * (partial / np.nanmax(partial)) + offset
