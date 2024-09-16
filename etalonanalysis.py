@@ -77,11 +77,8 @@ import matplotlib.patheffects as pe
 from numba import njit
 
 import scipy.special as sc
-# Numba overloads for scipy.special functions
-# pip install numba-special???
-#doesn't work
-# maybe need to install numba and numba-special in a particular way...
-import numba_special
+# Add overloads to allow scipy.special functions to be numba-compatible
+import numba_scipy
 
 
 try:
