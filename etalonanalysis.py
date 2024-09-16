@@ -54,7 +54,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from operator import attrgetter
 import weakref
-from multiprocessing import Pool, Process
+from multiprocessing import Pool
 from typing import Callable
 # tqdm progress bars
 from tqdm import tqdm
